@@ -1,0 +1,99 @@
+Option Explicit
+
+' ============================================================
+' SCRIPT NAME: Merge_Organize_Normalize
+'
+' PURPOSE
+' This macro reorganizes and normalizes measurement data in
+' an Excel worksheet.
+'
+' WORKFLOW
+' 1. Consolidates values from multiple columns (N:Z) into
+' a single column (F) sequentially.
+' 2. Normalizes data in blocks of 13 rows based on a pivot
+' value (last row of each block).
+'
+' INPUT DATA STRUCTURE
+' - Active worksheet should contain raw measurements from
+' columns N (14) to Z (26), rows 2 to 505 (editable).
+'
+' OUTPUT DATA LOCATIONS
+' - Consolidated values → Column F
+' - Normalized values → Column G
+'
+' ASSUMPTIONS
+' - Each block contains 12 data rows + 1 pivot row (total 13)
+' - Pivot row is the last row of each block
+' - Pivot value of 0 → normalization sets all rows in block to 0, pivot row to 100
+'
+' AUTHOR: [Your name / lab]
+' VERSION: 1.0
+' LAST UPDATED: [Date]
+'
+' ============================================================
+
+Sub Merge_Organize_Normalize()
+
+' Worksheet object representing the active sheet
+Dim ws As Worksheet
+
+' Loop and block counters
+Dim ligneSource As Long, col As Long, ligneCible As Long
+Dim i As Long, debutBloc As Long, finBloc As Long
+Dim valeurPivot As Double
+Dim nbLignesBloc As Long, derniereligne As Long
+
+' Ranges and cells (if needed for future expansion)
+Dim rng As Range
+Dim cell As Range 
+
+' Operate on the active worksheet
+Set ws = ActiveSheet
+
+' ============================================================
+' STEP 1 — Consolidate values from multiple columns into F
+' ============================================================
+
+ligneCible = 2 ' Starting row for writing consolidated values in column F
+
+' Loop through source rows (2 to 505) and columns N (14) to Z (26)
+For ligneSource = 2 To 505
+For col = 14 To 26
+ws.Cells(ligneCible, "F").Value = ws.Cells(ligneSource, col).Value
+ligneCible = ligneCible + 1
+Next col
+Next ligneSource 
+
+' ============================================================
+' STEP 2 — Normalize data in blocks based on pivot value
+' ============================================================
+
+derniereligne = 6553 ' End row for processing
+nbLignesBloc = 13 ' Number of rows per block (12 data + 1 pivot)
+
+' Loop over each block
+For finBloc = 14 To derniereligne Step nbLignesBloc
+
+' Determine start of the block
+debutBloc = finBloc - (nbLignesBloc - 1)
+
+' Pivot value is the last row of the block in column F
+valeurPivot = ws.Cells(finBloc, "F").Value 
+
+If valeurPivot <> 0 Then
+' Normalize each row in the block based on pivot
+For i = finBloc - 1 To debutBloc Step -1
+ws.Cells(i, "G").Value = ws.Cells(i, "F").Value / valeurPivot * 100
+Next i
+' Pivot row is always 100%
+ws.Cells(finBloc, "G").Value = 100
+Else
+' Pivot = 0 → set all rows in block to 0, pivot row = 100
+For i = finBloc - 1 To debutBloc Step -1
+ws.Cells(i, "G").Value = 0
+Next i
+ws.Cells(finBloc, "G").Value = 100
+End If
+Next finBloc 
+
+End Sub
